@@ -9,6 +9,7 @@ import dash_html_components as html
 import plotly.express as px
 import yfinance as yf
 import pandas as pd
+from dash.dependencies import Input, Output
 
 from controls import PERIODS
 
@@ -16,42 +17,50 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
-tick = yf.Ticker('IPOF')
-
-df = tick.history(period='max')
-df = df.loc[:, 'Close']
-
-fig = px.line(df, x=df.index, y="Close", title="Closing Price Chart", labels={"Close":"Close Price (USD)"})
-
 app.layout = html.Div(children=[
-    html.H1(children='Stock Chart Example'),
+    html.H1(children='Financial Analysis Dashboard'),
 
     dcc.Input(
         id="tick-input",
-        placeholder="input ticker symbol"
+        placeholder="input ticker symbol",
+        value='MSFT',
+        debounce=True
+
     ),
 
-    dcc.Dropdown(
+    dcc.RadioItems(
         id="period-interval",
-        multi=True,
-        value=[interval for interval in PERIODS]
+        options=[{'label': interval, 'value': interval} for interval in PERIODS],
+        value='5d',
+        labelStyle={'display': 'inline-block'}
     ),
 
     dcc.Graph(
-        id='example-graph',
-        figure=fig
+        id='close-price-graph'
     )
 ])
 
-def create_close_price_df(ticker, period='1y'):
-    tick = yf.Ticker(ticker)
-    df = tick.history(period=period)
-    df = df.loc[:, "Close"]
+# Helper function
+def create_df(ticker, interval):
+
     return df
 
-# @app.callback(
-#     Output("")
-# )
+@app.callback(
+    Output('close-price-graph', 'figure'),
+    [Input('tick-input', 'value'),
+    Input('period-interval', 'value')]
+)
+def close_price_plot(ticker, interval):
+    tick = yf.Ticker(ticker)
+    df = tick.history(period=interval)
+    df = df.loc[:,'Close']
+    fig = px.line(df, 
+                x=df.index, 
+                y="Close", 
+                title="<b>{}   {}</b> <br> Close Price (USD)".format(tick.info['longName'], tick.info['symbol']), 
+                labels={"Close":"Close Price (USD)"})
+    fig.update_xaxes(tickformat="%m-%d-%Y")
+    return fig
 
 if __name__ == '__main__':
     app.run_server(debug=True)

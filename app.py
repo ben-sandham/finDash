@@ -24,7 +24,8 @@ app.layout = html.Div(children=[
         id="tick-input",
         placeholder="input ticker symbol",
         value='MSFT',
-        debounce=True
+        debounce=True,
+        style={'width': '300px'}
 
     ),
 
